@@ -1,3 +1,14 @@
+/**
+ * 
+ * App JS file for managing all the configurations required for the server endpoint. Also to manage below.
+ * 
+ *  - Errorhandling
+ *  - Call respective routes
+ *  - Load BodyParser
+ * 
+ *  
+ */
+
 // Load modules
 
 const express = require('express');

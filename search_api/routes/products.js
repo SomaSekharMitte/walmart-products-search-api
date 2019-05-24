@@ -1,3 +1,8 @@
+/**
+ * 
+ * Products routes JS file for managing all the routes related to search API 
+ *  
+ */
 // Load modules
 const express = require('express');
 const router = express.Router();
@@ -7,10 +12,6 @@ const Product = require('../model/product');
 
 router.get('/:pageNumber/:pageSize', (request, response, next) => {
 
-    for (const key in request.query) {
-        //console.log("Got Query Params: Key: ", key, "and Value: " ,request.query[key]);
-    }
-
     var pageNumber = request.params.pageNumber;
     var pageSize = request.params.pageSize;
     var query = {};
@@ -18,7 +19,7 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
     if (pageNumber < 0 || pageNumber == 0) {
         errResponse = {
             'message': 'Invalid page number, should start with 1',
-            'statusCode': 404,
+            'statusCode': 400,
             'validUrl': 'http://localhost:3000/walmartproducts/{pageNumber}/{pageSize}'
         };
         return response.json(errResponse);
@@ -27,38 +28,53 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
     if (!(pageSize >= 1 && pageSize <= 30)) {
         errResponse = {
             'message': 'Invalid page Size, should be between 1 and 30',
-            'statusCode': 404,
+            'statusCode': 400,
             'validUrl': 'http://localhost:3000/walmartproducts/{pageNumber}/{pageSize}'
         };
         return response.json(errResponse);
     }
 
+    // Parse and map all the query parameters to queryParams map
     const queryParams = Object.assign({}, ...Object.keys(request.query).map(objKey => {
         return {[objKey]: request.query[objKey]}
     }));
 
-    let filterQuery = {};
+    var filterQuery = {};
 
-    const regEx = new RegExp();
-
+    // Set skip and limit for server side pagination
     query.skip = pageSize * (pageNumber - 1);
     query.limit = parseInt(pageSize);
 
-    const num = Product.countDocuments().then((err, count) => {
-        return count;
-    });
+    // Perform the query string validation and amend the filterQuery for the final search criteria
+    if (queryParams.search != undefined && queryParams.search.length > 0) {
+        filterQuery = {'productName' : { '$regex' : queryParams.search, '$options' : 'i'}}
+    }
+    if (queryParams.inStock) {
+        filterQuery = Object.assign(filterQuery, {'inStock' : queryParams.inStock});
+    }
+    if (queryParams.minReviewRating > 0) {
+        filterQuery = Object.assign(filterQuery, 
+            {'reviewRating' : { '$gte' : queryParams.minReviewRating }});
+    }
+    if (queryParams.maxReviewRating > 0) {
+        filterQuery = Object.assign(filterQuery, 
+            {'reviewRating' : { '$lte' : queryParams.maxReviewRating }});
+    }
+    if (queryParams.minPrice > 0) {
+    }
+    if (queryParams.maxPrice > 0) {
+    }
+    if (queryParams.minReviewCount > 0) {
+        filterQuery = Object.assign(filterQuery,
+            {'reviewCount' : { '$gte' : queryParams.minReviewCount }});
+    }
+    if (queryParams.maxReviewCount > 0) {
+        filterQuery = Object.assign(filterQuery, 
+            {'reviewCount' : { '$lte' : queryParams.maxReviewCount }});
+    }
 
-    Product.estimatedDocumentCount().then(count =>{
-        return count;
-    });
-
-   // Make a call to get all the products matching the criteria
-    Product.find({ 'productName' : { '$regex' : queryParams.search, '$options' : 'i'}, 
-                    'inStock' : queryParams.inStock,
-                   'reviewRating' : { '$gte' : queryParams.minReviewRating , '$lte' : queryParams.maxReviewRating },
-                   'price' : { '$gte' : queryParams.minPrice, '$lte' : queryParams.maxPrice }
-                 }
-                 ,{},query)
+    // Make a call to get all the products matching the criteria
+    Product.find(filterQuery,{},query)
     .exec()
     .then(docs => {
         const totalPrducts = docs.length;
