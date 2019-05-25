@@ -2,7 +2,6 @@
  * 
  * Server JS file for managing the server creation and other server related configuations
  * 
- *    
  */
 
 // Load modules

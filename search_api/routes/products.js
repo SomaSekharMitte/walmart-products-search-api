@@ -9,7 +9,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Product = require('../model/product');
 
-
 router.get('/:pageNumber/:pageSize', (request, response, next) => {
 
     var pageNumber = request.params.pageNumber;
@@ -61,8 +60,12 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
             {'reviewRating' : { '$lte' : queryParams.maxReviewRating }});
     }
     if (queryParams.minPrice > 0) {
+        filterQuery = Object.assign(filterQuery, 
+            {'price' : { '$gte' : queryParams.minPrice }});
     }
     if (queryParams.maxPrice > 0) {
+        filterQuery = Object.assign(filterQuery, 
+            {'price' : { '$lte' : queryParams.maxPrice }});
     }
     if (queryParams.minReviewCount > 0) {
         filterQuery = Object.assign(filterQuery,
@@ -75,13 +78,27 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
 
     // Make a call to get all the products matching the criteria
     Product.find(filterQuery,{},query)
+    .select()
     .exec()
-    .then(docs => {
-        const totalPrducts = docs.length;
+    .then(productDocs => {
+        const totalPrducts = productDocs.length; 
+        // Customize the response I would want to show up in the response
+        const docResponse = productDocs.map(doc => {
+            return {
+                productId: doc.productId,
+                productName: doc.productName,
+                shortDescription: doc.shortDescription,
+                longDescription: doc.longDescription,
+                price: String("$").concat((doc.price / 100).toFixed(2)),
+                productImage: doc.productImage,
+                reviewRating: doc.reviewRating,
+                reviewCount: doc.reviewCount,
+                inStock: doc.inStock
+            }
+        });
+
         response.status(200).json({
-            products: [
-                docs
-            ],
+            products: docResponse,
             totalProducts: totalPrducts,
             pageNumber: Number(request.params.pageNumber),
             pageSize: Number(request.params.pageSize),
