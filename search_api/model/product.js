@@ -1,8 +1,5 @@
-
 /**
- * 
  * Products model/schema JS file mapped to products collection in MongoDB
- *  
  */
 // Load modules
 

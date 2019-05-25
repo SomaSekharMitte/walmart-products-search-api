@@ -5,7 +5,6 @@
  *  - Errorhandling
  *  - Call respective routes
  *  - Load BodyParser
- * 
  *  
  */
 
@@ -15,12 +14,16 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const morgan = require('morgan');
+
+// Load 'products' routes module
+const productRoutes = require('./search_api/routes/products');
+
+// Load the right environment mongodb uri for the connection
+let url = (process.env.NODE_ENV == "dev") ? process.env.MONGO_DEV_URI : process.env.MONGO_PROD_URI;
 
 // mongoDB connection
-mongoose.connect("mongodb+srv://node-app:" + process.env.MONGO_DB_PW + "@my-node-app-gawel.mongodb.net/test?retryWrites=true", 
-{
-    useNewUrlParser: true
-}, (err) => {
+mongoose.connect(url,{ useNewUrlParser: true}, (err) => {
     if (err) {
         console.log('Could Not Connect To MongoDb', err);
     } else {
@@ -28,17 +31,15 @@ mongoose.connect("mongodb+srv://node-app:" + process.env.MONGO_DB_PW + "@my-node
     }
 });
 
-// Load 'products' routes module
-const productRoutes = require('./search_api/routes/products');
+// Set the URLEncode and JSON
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(morgan('dev'));
 
 // Load all routes
 app.use('/walmartproducts', productRoutes);
 
 mongoose.Promise = global.Promise;
-
-// Set the URLEncode and JSON
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
 // Set appropriate Access contols for the API
 app.use((request, response, next) => {
