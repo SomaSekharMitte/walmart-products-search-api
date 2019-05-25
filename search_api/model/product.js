@@ -7,9 +7,6 @@
 // Load modules
 
 const mongoose = require('mongoose');
-require('mongoose-currency').loadType(mongoose);
-
-const Currency = mongoose.Types.Currency;
 
 // Model for Product
 const productSchema = mongoose.Schema ({
@@ -18,7 +15,7 @@ const productSchema = mongoose.Schema ({
     productName: String,
     shortDescription: String,
     longDescription: String,
-    price: { type : Currency },
+    price: Number,
     productImage: String,
     reviewRating: Number,
     reviewCount: Number,

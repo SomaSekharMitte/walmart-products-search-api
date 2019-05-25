@@ -59,14 +59,6 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
         filterQuery = Object.assign(filterQuery, 
             {'reviewRating' : { '$lte' : queryParams.maxReviewRating }});
     }
-    if (queryParams.minPrice > 0) {
-        filterQuery = Object.assign(filterQuery, 
-            {'price' : { '$gte' : queryParams.minPrice }});
-    }
-    if (queryParams.maxPrice > 0) {
-        filterQuery = Object.assign(filterQuery, 
-            {'price' : { '$lte' : queryParams.maxPrice }});
-    }
     if (queryParams.minReviewCount > 0) {
         filterQuery = Object.assign(filterQuery,
             {'reviewCount' : { '$gte' : queryParams.minReviewCount }});
@@ -75,6 +67,16 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
         filterQuery = Object.assign(filterQuery, 
             {'reviewCount' : { '$lte' : queryParams.maxReviewCount }});
     }
+    if (queryParams.minPrice > 0 && queryParams.maxPrice == undefined) {
+        filterQuery = Object.assign(filterQuery,
+            {'price' : { '$gte' : queryParams.minPrice }});
+    } else if (queryParams.maxPrice > 0 && queryParams.minPrice == undefined) {
+        filterQuery = Object.assign(filterQuery, 
+            {'price' : { '$lte' : queryParams.maxPrice }});
+    } else {
+        filterQuery = Object.assign(filterQuery, 
+            {'price' : { '$gte' : queryParams.minPrice, '$lte' : queryParams.maxPrice }});
+    }
 
     // Make a call to get all the products matching the criteria
     Product.find(filterQuery,{},query)
@@ -82,21 +84,21 @@ router.get('/:pageNumber/:pageSize', (request, response, next) => {
     .exec()
     .then(productDocs => {
         const totalPrducts = productDocs.length; 
-        // Customize the response I would want to show up in the response
+        // Customize the response to be shown up in the JSON response
         const docResponse = productDocs.map(doc => {
+            const priceVal = doc.price.toFixed(2);
             return {
                 productId: doc.productId,
                 productName: doc.productName,
                 shortDescription: doc.shortDescription,
                 longDescription: doc.longDescription,
-                price: String("$").concat((doc.price / 100).toFixed(2)),
+                price: String("$").concat(priceVal),
                 productImage: doc.productImage,
                 reviewRating: doc.reviewRating,
                 reviewCount: doc.reviewCount,
                 inStock: doc.inStock
             }
         });
-
         response.status(200).json({
             products: docResponse,
             totalProducts: totalPrducts,
